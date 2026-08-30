@@ -1,0 +1,6 @@
+{
+  "name": "Oleska Calculator",
+  "description": "Minimalist luxury monochrome calculator for Oleska featuring standard and scientific modes (sin, cos, tan, log, ln, powers, roots), light/dark mode, tactile micro-interactions, memory operations, calculation history tape, and pristine typography.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
