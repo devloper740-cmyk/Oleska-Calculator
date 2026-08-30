@@ -3,7 +3,9 @@ name: Build Android App Bundle (.AAB)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build-bundle:
@@ -21,14 +23,33 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew || true
+        run: chmod +x gradlew
 
-      - name: Build Android App Bundle (Release / Debug)
-        run: ./gradlew :app:bundleRelease || ./gradlew :app:bundleDebug
+      - name: Prepare Keystores for Signing
+        run: |
+          # Restore debug.keystore from base64 if present, or generate one
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          
+          # Generate upload keystore if not already present
+          if [ ! -f my-upload-key.jks ]; then
+            keytool -genkeypair -v -keystore my-upload-key.jks -storepass android -alias upload -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Oleska Calculator,O=AIStudio,C=US"
+          fi
+
+      - name: Build Android App Bundle (.AAB)
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
+        run: ./gradlew :app:bundleRelease
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: oleska-calculator-aab
           path: app/build/outputs/bundle/**/*.aab
-          retention-days: 7
+          retention-days: 14
+
